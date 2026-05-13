@@ -95,7 +95,7 @@ def reward_shaping(_obs, act, agent):
         - phase reward: 对应相位编号动作的奖励
         - duration reward: 对应相位持续时间动作的奖励
     """
-    junction_id = 0
+    junction_id = 0  # 单路口场景里，路口 id 固定为 0
     phase_reward, duration_reward = 0, 0
 
     frame_state = _obs["frame_state"]
@@ -107,4 +107,48 @@ def reward_shaping(_obs, act, agent):
     # 完善奖励函数设计。
     # 提示：可结合等待时间变化、最佳相位匹配和切换惩罚设计 phase_reward 与 duration_reward。
 
-    return 0, 0
+    enter_vehicle_count = 0  # 当前进口车道上的车辆数量
+    stopped_vehicle_count = 0  # 当前进口车道上处于等待状态的车辆数量
+    total_waiting_time = 0.0  # 当前所有进口车辆累计等待时间之和
+
+    for vehicle in vehicles:
+        if not on_enter_lane(vehicle):  # 如果车辆不在进口车道上，则不参与奖励计算
+            continue
+        if vehicle["target_junction"] != junction_id:
+            continue
+
+        enter_vehicle_count += 1
+
+        if vehicle["speed"] <= 0.1:
+            stopped_vehicle_count += 1
+
+        # waiting_time 是环境给出的车辆等待时间
+        total_waiting_time += vehicle.get("waiting_time", 0)
+
+    # 没有进口车辆时，不给奖励也不给惩罚
+    if enter_vehicle_count == 0:
+        agent.preprocess.old_waiting_time = 0.0
+        return 0.0, 0.0
+
+    # 等待时间变化量：
+    # 上一次总等待时间 - 当前总等待时间。
+    # 如果等待时间下降，waiting_delta 为正，说明交通状态变好。
+    # 如果等待时间上升，waiting_delta 为负，说明交通状态变差。
+
+    waiting_delta = agent.preprocess.old_waiting_time - total_waiting_time
+    agent.preprocess.old_waiting_time = total_waiting_time
+
+    # 停车比例：
+    # 等待车辆数 / 进口车辆总数。
+    # 停车比例越高，说明拥堵越严重。
+
+    queue_ratio = stopped_vehicle_count / enter_vehicle_count
+
+    # reward 分成两部分：
+    # 1. 等待时间下降，给正奖励；等待时间上升，给负奖励。
+    # 2. 停车比例越高，惩罚越大。
+    # 0.01 是缩放系数，避免 waiting_delta 数值过大。
+
+    reward = 0.01 * waiting_delta - queue_ratio
+
+    return reward, reward
