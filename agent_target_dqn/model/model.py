@@ -36,7 +36,8 @@ class Model(nn.Module):
         # Hint: Adjust hidden sizes by observation dimension and keep the output heads compatible.
         # 重新设计 Target DQN 主干网络维度与层数。
         # 提示：可结合观测维度调整隐藏层宽度，并保持输出头输入维度匹配。
-        all_dims = [Config.DIM_OF_OBSERVATION] + [16, 32] + [16]
+        hidden_dim = 128
+        all_dims = [Config.DIM_OF_OBSERVATION] + [256] + [hidden_dim]
 
         for i in range(len(all_dims) - 1):
             modules.append(nn.Linear(all_dims[i], all_dims[i + 1]))
@@ -47,7 +48,7 @@ class Model(nn.Module):
         self.model = nn.Sequential(*modules).to(self.device)
 
         num_heads = len(action_shape)
-        self.heads = nn.ModuleList([nn.Linear(16, np.prod(action_shape[i])) for i in range(num_heads)]).to(self.device)
+        self.heads = nn.ModuleList([nn.Linear(hidden_dim, np.prod(action_shape[i])) for i in range(num_heads)]).to(self.device)
 
     def forward(self, s, state=None, info=None):
         if info is None:
