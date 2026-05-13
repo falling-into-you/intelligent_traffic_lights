@@ -29,10 +29,10 @@ class Config:
     # Hint: Focus on learning rate, epsilon range, epsilon decay, and target update frequency.
     # 调优 Target DQN 超参数。
     # 提示：可重点尝试学习率、epsilon 起止值、epsilon 衰减率和目标网络更新频率。
-    LR = 1e-3
+    LR = 5e-4
 
     START_EPSILON_GREEDY = 1.0
-    END_EPSILON_GREEDY = 0.3
+    END_EPSILON_GREEDY = 0.1
     EPSILON_DECAY = 0.995
     LAMBDA = 0.75
     NUMB_HEAD = 2
