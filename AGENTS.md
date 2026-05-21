@@ -34,6 +34,10 @@ Use Python 3, 4-space indentation, and UTF-8 files. Keep existing bilingual comm
 
 There is no dedicated test suite in this checkout. Use `train_test.py` as the main smoke test after changing agent behavior. For focused checks, compile changed modules with `python -m py_compile`. When changing preprocessing, validate both `observation_process` and `action_process`; when changing learning code, verify tensor shapes for all action heads.
 
+## Collaboration Workflow
+
+For learning-oriented code changes, do not edit repository files directly unless explicitly asked. Explain the background, the reason for the change, the target file and function, then provide the exact code snippet for the user to type manually. Work step by step and wait for the user to confirm or ask for the next step before moving on. Direct edits are acceptable only for documentation, Git operations, or when the user clearly requests implementation.
+
 ## Commit & Pull Request Guidelines
 
 Local Git history is unavailable in this checkout, so no project-specific commit pattern can be inferred. Use concise imperative commits, for example `Fix target DQN target network sync` or `Tune PPO reward shaping`. Pull requests should state the affected agent, summarize config changes, include the command used for validation, and mention any expected reward or training-impact observations. Do not include generated checkpoints, logs, or temporary experiment outputs unless explicitly required.
