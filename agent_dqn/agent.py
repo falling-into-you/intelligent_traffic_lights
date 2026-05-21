@@ -35,7 +35,7 @@ class Agent(BaseAgent):
         # Hint: Try RMSprop, Adam, or SGD together with learning rate tuning.
         # 比较并选择合适的优化器。
         # 提示：可尝试 RMSprop、Adam 或 SGD，并结合学习率一起调优。
-        self.optim = torch.optim.RMSprop(self.model.parameters(), lr=Config.LR)
+        # DQN 先沿用 RMSprop，便于和 Target-DQN 在相同优化器设置下对比。
         self.optim = torch.optim.RMSprop(self.model.parameters(), lr=Config.LR)
         self._eps = Config.START_EPSILON_GREEDY
         self.end_eps = Config.END_EPSILON_GREEDY
