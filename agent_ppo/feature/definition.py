@@ -77,8 +77,7 @@ def reward_shaping(_obs, act, agent):
         - phase reward: 对应相位编号动作的奖励
         - duration reward: 对应相位持续时间动作的奖励
     """
-    junction_id = 0
-    phase_reward, duration_reward = 0, 0
+    junction_id = 0  # 单路口场景里，路口 id 固定为 0
 
     frame_state = _obs["frame_state"]
     vehicles = frame_state["vehicles"]
@@ -89,7 +88,56 @@ def reward_shaping(_obs, act, agent):
     # 完善奖励函数设计。
     # 提示：可结合等待时间变化、相位匹配、通行效率和切换惩罚构造奖励。
 
-    return 0
+    enter_vehicle_count = 0  # 当前进口车道上的车辆数量
+    stopped_vehicle_count = 0  # 当前进口车道上处于等待状态的车辆数量
+    total_delay = 0.0  # 当前所有进口车辆延误时间之和
+    total_waiting_time = 0.0  # 当前所有进口车辆等待时间之和
+
+    for vehicle in vehicles:
+        if not on_enter_lane(vehicle):  # 如果车辆不在进口车道上，则不参与奖励计算
+            continue
+        if vehicle["target_junction"] != junction_id:
+            continue
+
+        enter_vehicle_count += 1
+
+        if vehicle["speed"] <= 0.1:
+            stopped_vehicle_count += 1
+
+        # delay 是环境给出的车辆延误时间，单位是秒。
+        total_delay += vehicle.get("delay", 0.0)
+
+        # waiting_time 是环境给出的车辆等待时间
+        total_waiting_time += vehicle.get("waiting_time", 0.0)
+
+    # 没有进口车辆时，不给奖励也不给惩罚
+    if enter_vehicle_count == 0:
+        return 0.0
+
+    avg_delay = total_delay / enter_vehicle_count
+    avg_waiting_time = total_waiting_time / enter_vehicle_count
+    queue_length = stopped_vehicle_count
+
+    # 对齐环境最终得分的三个正向指标：
+    # 1. 平均延误越低，delay_score 越接近 1。
+    # 2. 排队车辆越少，queue_score 越接近 1。
+    # 3. 平均等待时间越低，waiting_score 越接近 1。
+    delay_score = 1.0 / (1.0 + avg_delay / 9.0)
+    queue_score = 1.0 / (1.0 + queue_length / 10.0)
+    waiting_score = 1.0 / (1.0 + avg_waiting_time / 8.0)
+
+    # 环境会惩罚过于频繁的信号切换。
+    # 评估规则中，连续两个绿灯相位间隔小于 8 秒会增加切换惩罚。
+    # PPO 的 act 是 ActData，d_action = [phase_idx, duration]。
+    short_duration_penalty = 0.0
+    if act is not None and act.d_action is not None:
+        duration = int(act.d_action[1])
+        if duration < 8:
+            short_duration_penalty = 1.5 * (8 - duration) / 8.0
+
+    reward = delay_score + queue_score + waiting_score - short_duration_penalty
+
+    return reward
 
 
 def _calc_reward(list_sample_data):

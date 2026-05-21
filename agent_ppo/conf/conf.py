@@ -32,9 +32,8 @@ class Config:
     # Hint: Focus on learning rate, gradient clipping range, VALUE_COEF, and exploration-related factors.
     # 调优 PPO 超参数。
     # 提示：可重点尝试学习率、梯度裁剪范围、VALUE_COEF 和探索相关系数。
-    INIT_LEARNING_RATE_START = 0.004
-    INIT_LEARNING_RATE_START = 0.004
-    BETA_START = 0.025
+    INIT_LEARNING_RATE_START = 3e-4
+    BETA_START = 0.01
     LOG_EPSILON = 1e-6
 
     RMSPROP_DECAY = 0.9
@@ -54,6 +53,6 @@ class Config:
     GAMMA = 0.995
     LAMDA = 0.95
 
-    USE_GRAD_CLIP = False
-    GRAD_CLIP_RANGE = 0.9
-    VALUE_COEF = 1
+    USE_GRAD_CLIP = True
+    GRAD_CLIP_RANGE = 0.5
+    VALUE_COEF = 0.5

@@ -35,8 +35,8 @@ class Model(nn.Module):
         # Hint: Add suitable hidden layers and keep self.unit_size aligned with the backbone output.
         # 完善 PPO 共享特征层与 Actor/Critic 网络结构。
         # 提示：可补充隐藏层设计，并保持 self.unit_size 与主干网络输出一致。
-        self.unit_size = Config.DIM_OF_OBSERVATION
-        all_dims = [Config.DIM_OF_OBSERVATION]
+        self.unit_size = 128
+        all_dims = [Config.DIM_OF_OBSERVATION, 256, self.unit_size]
         self.main_mlp = MLP(all_dims, "main_mlp")
 
         # Output label
@@ -44,7 +44,7 @@ class Model(nn.Module):
         self.label_mlp = ModuleDict(
             {
                 "label{0}_mlp".format(label_index): MLP(
-                    [self.unit_size, self.label_size_list[label_index]],
+                    [self.unit_size, 64, self.label_size_list[label_index]],
                     "label{0}_mlp".format(label_index),
                 )
                 for label_index in range(len(self.label_size_list))

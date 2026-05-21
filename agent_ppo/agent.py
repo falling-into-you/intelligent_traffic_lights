@@ -35,8 +35,8 @@ class Agent(BaseAgent):
         # Hint: Try RMSprop, Adam, or SGD together with INIT_LEARNING_RATE_START tuning.
         # 比较并选择合适的 PPO 优化器。
         # 提示：可尝试 RMSprop、Adam 或 SGD，并结合 INIT_LEARNING_RATE_START 调整。
-        self.optimizer = torch.optim.RMSprop(params=parameters, lr=initial_lr)
-        self.optimizer = torch.optim.RMSprop(params=parameters, lr=initial_lr)
+        # PPO 先使用 Adam。Adam 对 policy/value 混合损失更常用，学习率配合 3e-4。
+        self.optimizer = torch.optim.Adam(params=parameters, lr=initial_lr)
         self.label_size_list = Config.LABEL_SIZE_LIST
         self.legal_action_size = Config.LEGAL_ACTION_SIZE_LIST
         self.logger = logger

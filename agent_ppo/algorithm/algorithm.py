@@ -175,21 +175,55 @@ class Algorithm:
         # Hint: Compute the probability ratio, clipping term, and advantage-weighted loss.
         # 实现 PPO 策略损失（clip loss）。
         # 提示：需要计算概率比、裁剪项以及基于 advantage 的加权损失。
-        self.policy_cost = torch.tensor(0.0)
+        policy_cost_list = []
+
+        for head_idx in range(len(label_result)):
+            prob = F.softmax(label_result[head_idx], dim=1)
+
+            new_action_prob = prob.gather(1, label_list[head_idx].unsqueeze(1)).squeeze(1)
+            old_action_prob = old_label_probability_list[head_idx].gather(1, label_list[head_idx].unsqueeze(1)).squeeze(1)
+
+            ratio = new_action_prob / (old_action_prob + Config.LOG_EPSILON)
+
+            clipped_ratio = torch.clamp(ratio, 1.0-self.clip_param, 1.0+self.clip_param)
+
+            surrogate = ratio * advantage
+            clipped_surrogate = clipped_ratio * advantage
+
+            policy_loss = -torch.min(surrogate, clipped_surrogate)
+
+            policy_loss = policy_loss * weight_list[head_idx]
+            
+            policy_cost_list.append(policy_loss.mean())
+        
+        self.policy_cost = torch.stack(policy_cost_list).sum()
 
         # ========== TODO 7 ==========
         # Implement the PPO entropy loss.
         # Hint: Compute entropy from the action distribution to encourage exploration.
         # 实现 PPO 熵损失。
         # 提示：可根据动作概率分布计算熵，用于鼓励探索。
-        self.entropy_cost = torch.tensor(0.0)
+        entropy_cost_list = []
+
+        for head_idx in range(len(label_result)):
+            prob = F.softmax(label_result[head_idx], dim=1)
+            log_prob = torch.log(prob + Config.LOG_EPSILON)
+
+            entropy = -torch.sum(prob * log_prob, dim=1)
+            entropy = entropy * weight_list[head_idx]
+
+            entropy_cost_list.append(entropy.mean())
+        
+        self.entropy_cost = torch.stack(entropy_cost_list).sum()
+
+            
 
         # ========== TODO 8 ==========
         # Combine the final loss.
         # Hint: You can weight value_cost, policy_cost, and entropy regularization together.
         # 组合总损失。
         # 提示：可按 value_cost、policy_cost 和熵正则项加权求和。
-        self.loss = self.value_cost
+        self.loss = self.value_cost + self.policy_cost - self.var_beta * self.entropy_cost
 
         return self.loss, [
             self.loss,
